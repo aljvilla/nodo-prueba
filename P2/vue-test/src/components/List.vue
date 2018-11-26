@@ -1,37 +1,44 @@
 <template>
   <div>
-    <h1 v-show="isLoading">
-      Cargando personajes ...
-    </h1>
-    <table v-show="!isLoading">
-      <tr>
-        <th>Nombre</th>
-        <th>Casa</th>
-        <th>Detalle</th>
-      </tr>
-      <tr v-for="character in characters">
-        <td>{{ character.name }}</td>
-        <td>{{ character.house }}</td>
-        <td> <button @click="goToDetail(character._id)">Ver detalle</button> </td>
-      </tr>
-    </table>
+    <h1 v-show="isLoading">Cargando personajes ...</h1>
+    <b-modal hide-footer :title="details.name" ref="detailsModal">
+      <v-details :details="details"></v-details>
+    </b-modal>
+    <b-table v-show="!isLoading" striped hover :items="items" :fields="fields">
+      <template slot="show_details" slot-scope="row">
+        <!-- we use @click.stop here to prevent emitting of a 'row-clicked' event  -->
+        <b-button
+          size="sm"
+          v-show="!row.item.isLoadingDetails"
+          @click.stop="goToDetail(row)"
+          class="mr-2"
+        >Ver detalle</b-button>
+        <b-progress :value="100" v-show="row.item.isLoadingDetails" animated></b-progress>
+        <!-- In some circumstances you may need to use @click.native.stop instead -->
+        <!-- As `row.showDetails` is one-way, we call the toggleDetails function on @change -->
+      </template>
+    </b-table>
   </div>
 </template>
 
 
 <script>
-  import { listsAllCharacters } from '../services/got.service.js'
+  import { listsAllCharacters, getACharacter } from '../services/got.service.js'
+  import Details from './Details';
 
   export default {
     name: 'list-component',
-
+    components:{'v-details':Details},
     /**
      * @description the data block represents all the local variable of this component.
      */
     data () {
       return {
         characters: [],
-        isLoading: false
+        items:[],
+        fields:['name', 'house', 'show_details'],
+        isLoading: false,
+        details:{}
       }
     },
 
@@ -42,7 +49,7 @@
       this.isLoading = true
       listsAllCharacters()
         .then(res => {
-          this.characters = res
+          this.items = res.map(({_id,name, house})=>({name, house,_id, isLoadingDetails:false, details:null, showDetails:false }));
           this.isLoading = false
         })
     },
@@ -57,26 +64,15 @@
        * @param {string} id. the "_id" of the character that we are going to request.
        * @method goToDetail
        */
-      goToDetail(id) {
-        // CODE HERE
+      goToDetail({item:{_id}, index}) {
+        this.items[index].isLoadingDetails=true;
+        getACharacter(_id)
+        .then(res=>{
+          this.items[index].isLoadingDetails=false;
+          this.details=res.data;
+          this.$refs.detailsModal.show();
+        });
       }
     }
   }
 </script>
-<style>
-  table {
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
-  }
-
-  tr:nth-child(even) {
-    background-color: #dddddd;
-  }
-</style>
