@@ -10,7 +10,7 @@ const gotService = {
  * @method listsAllCharacters
  * @return {Obj} response, an object with the information of all the GoT characters.
  */
-export function listsAllCharacters () {
+export function listsAllCharacters() {
   return mainService.get('/characters').then((res) => {
     return res.data
   }).catch((error) => {
@@ -25,8 +25,13 @@ export function listsAllCharacters () {
  * @param {string} id. the "_id" of the GoT character.
  * @return {Obj} response, an object with the information of all the GoT characters.
  */
-export function getACharacter (id) {
-  // CODE HERE
+export function getACharacter(id) {
+  return mainService.get(`/characters/byId/${id}`).then((res) => {
+    return res.data
+  }).catch((error) => {
+    console.error(error)
+    return { error: error }
+  })
 }
 
 export default gotService
